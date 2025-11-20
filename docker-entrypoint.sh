@@ -41,7 +41,8 @@ ensure_mysql_ready() {
 
     echo ">> creating Database: $MYSQL_DATABASE and User: $MYSQL_USER"
     # Use a Here-Doc to feed SQL commands directly into the socket
-    mysql --socket=/run/mysqld/mysqld.sock <<-EOSQL
+    # ADDED: --protocol=socket to override MYSQL_HOST=127.0.0.1 env var
+    mysql --protocol=socket --socket=/run/mysqld/mysqld.sock <<-EOSQL
       CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
       CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
       GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
