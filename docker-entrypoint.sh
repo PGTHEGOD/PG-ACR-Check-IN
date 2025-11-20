@@ -41,8 +41,10 @@ ensure_mysql_ready() {
 
     echo ">> creating Database: $MYSQL_DATABASE and User: $MYSQL_USER"
     # Use a Here-Doc to feed SQL commands directly into the socket
-    # ADDED: --protocol=socket to override MYSQL_HOST=127.0.0.1 env var
-    mysql --protocol=socket --socket=/run/mysqld/mysqld.sock <<-EOSQL
+    # FIX: We explicitly set MYSQL_HOST="" for this command. 
+    # Even with --protocol=socket, if MYSQL_HOST is set to an IP (127.0.0.1), 
+    # the client might force TCP, which fails because of --skip-networking.
+    MYSQL_HOST="" mysql --protocol=socket --socket=/run/mysqld/mysqld.sock <<-EOSQL
       CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
       CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
       GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
@@ -50,7 +52,8 @@ ensure_mysql_ready() {
 EOSQL
 
     echo ">> Shutting down temporary server..."
-    mysqladmin --socket=/run/mysqld/mysqld.sock shutdown
+    # Ensure shutdown also ignores the TCP host env var
+    MYSQL_HOST="" mysqladmin --socket=/run/mysqld/mysqld.sock shutdown
     wait "$PID"
     echo ">> Initialization complete."
   fi
