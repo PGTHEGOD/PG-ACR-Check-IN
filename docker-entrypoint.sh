@@ -3,61 +3,65 @@ set -euo pipefail
 
 APP_VARIANT="${APP_VARIANT:-MYSQL-VERSION}"
 
+# Set defaults based on your provided .env values
+# These will be overridden if Docker passes different env vars
+MYSQL_DATABASE="${MYSQL_DATABASE:-library_system}"
+MYSQL_USER="${MYSQL_USER:-pgdev}"
+MYSQL_PASSWORD="${MYSQL_PASSWORD:-parkggez}"
+
 ensure_mysql_ready() {
+  echo ">> Configuring MySQL permissions..."
   mkdir -p /run/mysqld
   chown -R mysql:mysql /run/mysqld /var/lib/mysql
 
-  if [ ! -d /var/lib/mysql/mysql ]; then
-    mariadb-install-db --user=mysql --datadir=/var/lib/mysql >/dev/null
+  # Check if the 'mysql' system database exists. If not, initialize the DB.
+  if [ ! -d "/var/lib/mysql/mysql" ]; then
+    echo ">> Data directory is empty. Initializing database..."
+    
+    # Detect initialization command (handles both MariaDB and MySQL variants)
+    if command -v mysql_install_db >/dev/null; then
+      mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null
+    else
+      mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
+    fi
+
+    echo ">> Starting temporary server to create users..."
+    # Start MySQL in background, skipping networking, solely to run the setup SQL
+    mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking --socket=/run/mysqld/mysqld.sock &
+    PID=$!
+
+    # Wait for the server to be available
+    echo ">> Waiting for MySQL socket..."
+    for i in $(seq 1 30); do
+      if mysqladmin --socket=/run/mysqld/mysqld.sock ping --silent; then
+        break
+      fi
+      sleep 1
+    done
+
+    echo ">> creating Database: $MYSQL_DATABASE and User: $MYSQL_USER"
+    # Use a Here-Doc to feed SQL commands directly into the socket
+    mysql --socket=/run/mysqld/mysqld.sock <<-EOSQL
+      CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
+      CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+      GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
+      FLUSH PRIVILEGES;
+EOSQL
+
+    echo ">> Shutting down temporary server..."
+    mysqladmin --socket=/run/mysqld/mysqld.sock shutdown
+    wait "$PID"
+    echo ">> Initialization complete."
   fi
 
-  MYSQL_PORT="${MYSQL_PORT:-3306}"
-  mysqld --user=mysql \
-    --datadir=/var/lib/mysql \
-    --bind-address=0.0.0.0 \
-    --port="$MYSQL_PORT" \
-    --socket=/run/mysqld/mysqld.sock \
-    --skip-networking=0 \
-    &
-  MYSQL_PID=$!
-
-  cleanup() {
-    if kill -0 "$MYSQL_PID" 2>/dev/null; then
-      kill "$MYSQL_PID"
-      wait "$MYSQL_PID" || true
-    fi
-  }
-  trap cleanup INT TERM
-
-  until mariadb-admin --protocol=socket --socket=/run/mysqld/mysqld.sock ping --silent; do
-    sleep 1
-  done
-
-  DB_NAME="${MYSQL_DATABASE:-library_system}"
-  ROOT_PASS="${MYSQL_ROOT_PASSWORD:-root}"
-  DB_USER="root"
-  DB_PASS="${MYSQL_PASSWORD:-$ROOT_PASS}"
-
-  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock <<SQL
-CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$ROOT_PASS' WITH GRANT OPTION;
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$ROOT_PASS' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-SQL
-
-  export MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
-  export MYSQL_PORT
-  export MYSQL_USER="$DB_USER"
-  export MYSQL_PASSWORD="$DB_PASS"
-
-  pnpm start &
-  APP_PID=$!
-  wait "$APP_PID"
-  cleanup
+  echo ">> Starting MySQL Server..."
+  # exec replaces the current shell with mysqld (PID 1)
+  exec mysqld --user=mysql --datadir=/var/lib/mysql --bind-address=0.0.0.0 --console
 }
 
 if [ "$APP_VARIANT" = "MYSQL-VERSION" ]; then
   ensure_mysql_ready
 else
+  echo ">> Starting Application..."
   exec pnpm start
 fi
