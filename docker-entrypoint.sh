@@ -26,9 +26,14 @@ ensure_mysql_ready() {
     sleep 1
   done
 
-  DB_NAME="${MYSQL_DATABASE:-library_system}"
-  DB_USER="${MYSQL_USER:-pgdev}"
-  DB_PASS="${MYSQL_PASSWORD:-parkggez}"
+  DB_NAME="${MYSQL_DATABASE:-}"
+  DB_USER="${MYSQL_USER:-}"
+  DB_PASS="${MYSQL_PASSWORD:-}"
+
+  if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+    echo "ERROR: MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD must be provided via environment variables." >&2
+    exit 1
+  fi
 
   mariadb -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
   mariadb -e "CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';"
