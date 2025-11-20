@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 
 ARG NODE_VERSION=20
-ARG APP_VARIANT=MYSQL-VERSION
+ARG APP_VARIANT=SHEET-VERSION
 
 FROM node:${NODE_VERSION}-alpine AS base
 RUN apk add --no-cache libc6-compat \

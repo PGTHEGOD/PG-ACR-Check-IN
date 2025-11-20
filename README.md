@@ -93,7 +93,7 @@ pnpm dev                  # เปิดโหมดพัฒนา
 > หากใช้ Bun สามารถเรียก `bun install` และ `bun dev` ได้เช่นกัน (สคริปต์ใน `package.json` ออกแบบให้ทำงานเหมือนกัน)
 
 ## การใช้งาน Docker
-`Dockerfile` ที่รากโปรเจกต์รองรับทั้งสองเวอร์ชันผ่าน build arg `APP_VARIANT` (ค่าเริ่มต้น `MYSQL-VERSION`) และสามารถตั้งค่าเวอร์ชัน Node ได้ด้วย `NODE_VERSION`
+`Dockerfile` ที่รากโปรเจกต์รองรับทั้งสองเวอร์ชันผ่าน build arg `APP_VARIANT` (ค่าเริ่มต้น `SHEET-VERSION`) และสามารถตั้งค่าเวอร์ชัน Node ได้ด้วย `NODE_VERSION`
 
 ```bash
 # สร้างอิมเมจสำหรับเวอร์ชัน MySQL
