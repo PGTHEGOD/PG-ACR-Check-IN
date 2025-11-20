@@ -93,10 +93,10 @@ pnpm dev                  # เปิดโหมดพัฒนา
 > หากใช้ Bun สามารถเรียก `bun install` และ `bun dev` ได้เช่นกัน (สคริปต์ใน `package.json` ออกแบบให้ทำงานเหมือนกัน)
 
 ## การใช้งาน Docker
-`Dockerfile` ที่รากโปรเจกต์ฝัง MariaDB สำหรับเวอร์ชัน MySQL (ค่าเริ่มต้น `APP_VARIANT=MYSQL-VERSION`) และยังรองรับการสลับไปใช้เวอร์ชัน Google Sheets ผ่าน build arg. คุณสามารถตั้งค่า Node ได้ด้วย `NODE_VERSION`
+`Dockerfile` ที่รากโปรเจกต์รองรับทั้งสองเวอร์ชันผ่าน build arg `APP_VARIANT` (ค่าเริ่มต้น `MYSQL-VERSION`) และสามารถตั้งค่าเวอร์ชัน Node ได้ด้วย `NODE_VERSION`
 
 ```bash
-# สร้างอิมเมจ (ค่าเริ่มต้นคือ MySQL พร้อม MariaDB ในคอนเทนเนอร์)
+# สร้างอิมเมจ (ค่าเริ่มต้นคือ MYSQL-VERSION)
 docker build \
   --build-arg APP_VARIANT=MYSQL-VERSION \
   -t acr-mysql .
@@ -111,9 +111,9 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 ```
 
 > หมายเหตุ
-> - คอนเทนเนอร์สำหรับ MySQL จะเริ่ม MariaDB ภายในอัตโนมัติและบังคับใช้ root user เท่านั้น: ค่าเริ่มต้นคือฐานข้อมูล `library_system` พร้อมรหัสผ่าน `root` (`MYSQL_ROOT_PASSWORD`/`MYSQL_PASSWORD`). หากต้องการเปลี่ยนรหัสผ่าน โปรดแก้ไขไฟล์ `.env` หรือรันฐานข้อมูลภายนอกแทน
+> - คอนเทนเนอร์สำหรับ MYSQL-VERSION จะเชื่อมต่อฐานข้อมูล MySQL ที่รันอยู่ภายนอกตามค่าที่กำหนดใน `.env` (`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`). ตัวอิมเมจไม่ติดตั้ง MySQL มาให้
 > - อย่าลืมสร้างไฟล์ `.env.local` ให้พร้อมก่อนสั่ง build/run (สามารถสร้างไฟล์เฉพาะ Docker เช่น `.env.docker`)
-> - หากต้องการรันในโหมด production จริง อาจเชื่อมต่อ volume สำหรับ `/var/lib/mysql` และปรับสิทธิ์/รหัสผ่านตามมาตรฐานของคุณ
+> - แนะนำให้จัดเก็บรหัสผ่านฐานข้อมูลผ่าน secret manager หรือ environment variables ของ platform เพื่อความปลอดภัย
 
 ## การตั้งค่า MYSQL-VERSION
 ### ไฟล์ `.env`
@@ -173,6 +173,8 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
    - ลบรายการเฉพาะได้
    - นำเข้ารายชื่อนักเรียนด้วย JSON / JSONLines
    - กรองรายชื่อด้วยชั้น/ห้อง และค้นหาด้วยคีย์เวิร์ด
+
+> **หมายเหตุ:** หน้าแรกจะตรวจสุขภาพฐานข้อมูล/Google Sheets อัตโนมัติ หากไม่สามารถเชื่อมต่อได้ ระบบจะแสดงหน้าแจ้งเตือนและระงับการใช้งานชั่วคราวจนกว่าบริการจะกลับมาพร้อม
 
 ## การนำเข้ารายชื่อจากไฟล์ JSON
 - รองรับโครงสร้างแบบ `Worksheet` (คล้ายที่ได้จาก Excel → JSON) และสามารถใช้คีย์ภาษาไทย เช่น `รหัสประจำตัว`, `ชั้น`, `ห้อง`, `เลขที่`, `คำนำหน้า`, `ชื่อ`, `นามสกุล`

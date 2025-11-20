@@ -14,6 +14,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<Page>("student-login")
   const [studentId, setStudentId] = useState("")
   const [mounted, setMounted] = useState(false)
+  const [dbError, setDbError] = useState<string | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -30,7 +31,46 @@ export default function Home() {
     }
   }, [])
 
+  useEffect(() => {
+    let ignore = false
+    const checkHealth = async () => {
+      try {
+        const response = await fetch("/api/health", { cache: "no-store" })
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload.message || "ฐานข้อมูลไม่พร้อมใช้งาน")
+        }
+        if (!ignore) {
+          setDbError(null)
+        }
+      } catch (error) {
+        if (!ignore) {
+          setDbError((error as Error).message || "ฐานข้อมูลไม่พร้อมใช้งาน")
+        }
+      }
+    }
+    checkHealth()
+    const timer = setInterval(checkHealth, 60000)
+    return () => {
+      ignore = true
+      clearInterval(timer)
+    }
+  }, [])
+
   if (!mounted) return null
+
+  if (dbError) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-red-50 px-4 text-center">
+        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-red-100 bg-white p-8 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-wide text-red-500">ระบบฐานข้อมูลขัดข้อง</p>
+          <h1 className="text-2xl font-bold text-red-700">ไม่สามารถเชื่อมต่อฐานข้อมูลได้</h1>
+          <p className="text-sm text-slate-600">{dbError}</p>
+          <p className="text-xs text-slate-500">โปรดติดต่อผู้ดูแลระบบหรือรอสักครู่แล้วลองใหม่อีกครั้ง</p>
+        </div>
+      </div>
+    )
+  }
 
   const showAdminShortcut = currentPage !== "admin-dashboard"
 
