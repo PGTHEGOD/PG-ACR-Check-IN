@@ -34,20 +34,27 @@ ensure_mysql_ready() {
   done
 
   DB_NAME="${MYSQL_DATABASE:-}"
-  DB_USER="${MYSQL_USER:-}"
-  DB_PASS="${MYSQL_PASSWORD:-}"
+  ROOT_PASS="${MYSQL_ROOT_PASSWORD:-}"
+  DB_PASS="${MYSQL_PASSWORD:-$ROOT_PASS}"
+  DB_USER="root"
 
-  if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
-    echo "ERROR: MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD must be provided via environment variables." >&2
+  if [ -z "$DB_NAME" ] || [ -z "$ROOT_PASS" ]; then
+    echo "ERROR: MYSQL_DATABASE and MYSQL_ROOT_PASSWORD must be provided via environment variables." >&2
     exit 1
   fi
+  if [ -z "$DB_PASS" ]; then
+    DB_PASS="$ROOT_PASS"
+  fi
 
+  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$ROOT_PASS';"
+  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '$ROOT_PASS';"
+  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION; FLUSH PRIVILEGES;"
   mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';"
-  mariadb --protocol=socket --socket=/run/mysqld/mysqld.sock -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%'; FLUSH PRIVILEGES;"
 
   export MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
   export MYSQL_PORT
+  export MYSQL_USER="$DB_USER"
+  export MYSQL_PASSWORD="$DB_PASS"
 
   pnpm start &
   APP_PID=$!
