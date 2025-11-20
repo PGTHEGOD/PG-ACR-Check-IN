@@ -93,10 +93,10 @@ pnpm dev                  # เปิดโหมดพัฒนา
 > หากใช้ Bun สามารถเรียก `bun install` และ `bun dev` ได้เช่นกัน (สคริปต์ใน `package.json` ออกแบบให้ทำงานเหมือนกัน)
 
 ## การใช้งาน Docker
-`Dockerfile` ที่รากโปรเจกต์รองรับทั้งสองเวอร์ชันผ่าน build arg `APP_VARIANT` (ค่าเริ่มต้น `SHEET-VERSION`) และสามารถตั้งค่าเวอร์ชัน Node ได้ด้วย `NODE_VERSION`
+`Dockerfile` ที่รากโปรเจกต์ฝัง MariaDB สำหรับเวอร์ชัน MySQL (ค่าเริ่มต้น `APP_VARIANT=MYSQL-VERSION`) และยังรองรับการสลับไปใช้เวอร์ชัน Google Sheets ผ่าน build arg. คุณสามารถตั้งค่า Node ได้ด้วย `NODE_VERSION`
 
 ```bash
-# สร้างอิมเมจสำหรับเวอร์ชัน MySQL
+# สร้างอิมเมจ (ค่าเริ่มต้นคือ MySQL พร้อม MariaDB ในคอนเทนเนอร์)
 docker build \
   --build-arg APP_VARIANT=MYSQL-VERSION \
   -t acr-mysql .
@@ -111,8 +111,9 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 ```
 
 > หมายเหตุ
+> - คอนเทนเนอร์สำหรับ MySQL จะเริ่ม MariaDB ภายในอัตโนมัติและสร้างฐานข้อมูล/ผู้ใช้ตามค่าในตัวแปร `MYSQL_*`
 > - อย่าลืมสร้างไฟล์ `.env.local` ให้พร้อมก่อนสั่ง build/run (สามารถสร้างไฟล์เฉพาะ Docker เช่น `.env.docker`)
-> - หากต้องการรันในโหมด production จริง อาจเชื่อมต่อ volume สำหรับ logs หรือปรับ `docker run` ให้ส่งค่า environment ตรงๆ
+> - หากต้องการรันในโหมด production จริง อาจเชื่อมต่อ volume สำหรับ `/var/lib/mysql` และปรับสิทธิ์/รหัสผ่านตามมาตรฐานของคุณ
 
 ## การตั้งค่า MYSQL-VERSION
 ### ไฟล์ `.env`
