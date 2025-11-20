@@ -111,7 +111,7 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 ```
 
 > หมายเหตุ
-> - คอนเทนเนอร์สำหรับ MySQL จะเริ่ม MariaDB ภายในอัตโนมัติและบังคับใช้ root user เท่านั้น: ต้องระบุ `MYSQL_DATABASE` และ `MYSQL_ROOT_PASSWORD` (ถ้าไม่ตั้ง `MYSQL_PASSWORD` จะใช้ค่ารหัสผ่านเดียวกับ root)
+> - คอนเทนเนอร์สำหรับ MySQL จะเริ่ม MariaDB ภายในอัตโนมัติและบังคับใช้ root user เท่านั้น: ค่าเริ่มต้นคือฐานข้อมูล `library_system` พร้อมรหัสผ่าน `root` (`MYSQL_ROOT_PASSWORD`/`MYSQL_PASSWORD`). หากต้องการเปลี่ยนรหัสผ่าน โปรดแก้ไขไฟล์ `.env` หรือรันฐานข้อมูลภายนอกแทน
 > - อย่าลืมสร้างไฟล์ `.env.local` ให้พร้อมก่อนสั่ง build/run (สามารถสร้างไฟล์เฉพาะ Docker เช่น `.env.docker`)
 > - หากต้องการรันในโหมด production จริง อาจเชื่อมต่อ volume สำหรับ `/var/lib/mysql` และปรับสิทธิ์/รหัสผ่านตามมาตรฐานของคุณ
 
