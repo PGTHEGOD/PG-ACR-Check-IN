@@ -129,6 +129,7 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 | `ADMIN_SESSION_TOKEN` | ชื่อเซสชันคุกกี้ที่ใช้ผูกการเข้าสู่ระบบ |
 | `LIBRARY_ACCESS_CODE` | รหัสสำหรับอนุญาตอุปกรณ์ในห้องสมุด |
 | `LIBRARY_ACCESS_SESSION_TOKEN` | ค่าโทเคนที่ใช้เก็บในคุกกี้เมื่อยืนยันอุปกรณ์แล้ว |
+| `LIBRARY_ACCESS_CODE_HASH` | (ทางเลือก) ค่า SHA-256 ของ `LIBRARY_ACCESS_CODE` หากไม่ต้องการเก็บรหัสแบบ plain text |
 
 ### โครงสร้างฐานข้อมูล
 ไฟล์ `lib/db.ts` จะตรวจสอบและสร้าง schema ให้โดยอัตโนมัติเมื่อแอปเริ่มต้น:
@@ -147,6 +148,7 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 | `GOOGLE_SHEETS_STUDENTS_SHEET` / `GOOGLE_SHEETS_ATTENDANCE_SHEET` | ชื่อชีตรายชื่อนักเรียนและการเข้าใช้ |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | ข้อมูล Service Account ที่มีสิทธิ์แก้ไขชีต |
 | `LIBRARY_ACCESS_CODE`, `LIBRARY_ACCESS_SESSION_TOKEN` | รหัสสำหรับอนุญาตอุปกรณ์ + ค่า session หลังปลดล็อก |
+| `LIBRARY_ACCESS_CODE_HASH` | (ทางเลือก) ค่า SHA-256 ของ `LIBRARY_ACCESS_CODE` |
 
 ### ขั้นตอนสำคัญ
 1. สร้าง Spreadsheet ที่มีสองชีต (เช่น `Students` และ `Attendance`)
@@ -156,6 +158,7 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 
 ## การยืนยันอุปกรณ์ก่อนใช้งานครั้งแรก
 - กำหนด `LIBRARY_ACCESS_CODE` และ `LIBRARY_ACCESS_SESSION_TOKEN` ในไฟล์ `.env` ของเวอร์ชันที่ใช้งาน
+- หากต้องการไม่เก็บรหัสแบบ plain text ให้เติมค่า SHA-256 ลงใน `LIBRARY_ACCESS_CODE_HASH` และเก็บรหัสจริงไว้เฉพาะกับผู้ดูแล
 - เมื่อเปิดหน้าเว็บครั้งแรก ต้องกรอกรหัสอุปกรณ์นี้เพื่อปลดล็อก และระบบจะบันทึกคุกกี้ไว้ในเบราว์เซอร์นั้นๆ
 - ทุก API (ยกเว้น `/api/access` และ `/api/health`) จะถูกบล็อกหากไม่มีคุกกี้ดังกล่าว ทำให้ไม่สามารถเรียกใช้งานจากอุปกรณ์ภายนอกได้
 - หากต้องการเปลี่ยนรหัส ให้ปรับค่าใน `.env` และแจ้งรหัสใหม่กับอุปกรณ์ที่ได้รับอนุญาต

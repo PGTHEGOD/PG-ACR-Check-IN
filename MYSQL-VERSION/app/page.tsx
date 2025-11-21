@@ -129,6 +129,11 @@ export default function Home() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+          <div className="flex justify-center">
+            <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-blue-50 p-3">
+              <Image src="/assumption-rayoung.png" alt="Assumption College Rayong" fill className="object-contain" />
+            </div>
+          </div>
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Library Device Access</p>
           <h1 className="text-2xl font-bold text-slate-900">ยืนยันอุปกรณ์ก่อนเข้าใช้งาน</h1>
           <p className="text-sm text-slate-600">
@@ -153,6 +158,7 @@ export default function Home() {
               {accessSubmitting ? "กำลังตรวจสอบ..." : "ยืนยันรหัส"}
             </button>
           </form>
+          <p className="text-center text-xs text-slate-400">© {new Date().getFullYear()} Assumption College Rayong Library</p>
         </div>
       </div>
     )
@@ -236,7 +242,7 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
 
       <main className="flex-1">{content}</main>
       <footer className="mt-auto border-t border-slate-100 px-4 py-3 text-center text-xs text-slate-500 shrink-0">
-      © {new Date().getFullYear()} Assumption College Rayong Library · Developed by Akarapach Yootsukprasert (Park)
+        © {new Date().getFullYear()} Assumption College Rayong Library · Developed by Akarapach Yootsukprasert (Park AKA PG Dev.)
       </footer>
     </div>
   )

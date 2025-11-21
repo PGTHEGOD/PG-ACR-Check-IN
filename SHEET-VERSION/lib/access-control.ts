@@ -1,10 +1,17 @@
+import { createHash } from "crypto"
+
 const ACCESS_COOKIE = "acr_device_access"
 const accessCode = process.env.LIBRARY_ACCESS_CODE?.trim() || ""
-const sessionToken =
-  process.env.LIBRARY_ACCESS_SESSION_TOKEN?.trim() || (accessCode ? `acr-session-${accessCode}` : "")
+const accessCodeHash = process.env.LIBRARY_ACCESS_CODE_HASH?.trim() || ""
+const sessionTokenEnv = process.env.LIBRARY_ACCESS_SESSION_TOKEN?.trim() || ""
+const sessionToken = sessionTokenEnv || (accessCode ? `acr-session-${accessCode}` : "")
+
+function hashCode(code: string) {
+  return createHash("sha256").update(code).digest("hex")
+}
 
 export function isAccessEnabled(): boolean {
-  return Boolean(accessCode && sessionToken)
+  return Boolean(sessionToken && (accessCode || accessCodeHash))
 }
 
 export function isAuthorizedCookie(value?: string): boolean {
@@ -22,5 +29,9 @@ export function getSessionToken() {
 
 export function verifyAccessCode(code: string): boolean {
   if (!isAccessEnabled()) return true
-  return code === accessCode
+  const trimmed = code.trim()
+  if (accessCodeHash) {
+    return hashCode(trimmed) === accessCodeHash
+  }
+  return trimmed === accessCode
 }
