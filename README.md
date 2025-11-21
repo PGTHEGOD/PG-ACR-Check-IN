@@ -122,10 +122,13 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 | ตัวแปร | คำอธิบาย |
 | --- | --- |
 | `MYSQL_HOST` `MYSQL_PORT` | ข้อมูลการเชื่อม MySQL |
-| `MYSQL_DATABASE` | ชื่อฐานข้อมูล (จะสร้างให้อัตโนมัติถ้าไม่มี) |
+| `MYSQL_DATABASE` | ชื่อฐานข้อมูล |
 | `MYSQL_USER` `MYSQL_PASSWORD` | สิทธิ์ที่อนุญาตให้สร้างตาราง/อ่าน/เขียน |
+| `MYSQL_ROOT_PASSWORD` | รหัส root (กรณีใช้งานร่วม) |
 | `ADMIN_PASSWORD` | รหัสผ่านผู้ดูแลระบบ (ฝั่ง UI) |
 | `ADMIN_SESSION_TOKEN` | ชื่อเซสชันคุกกี้ที่ใช้ผูกการเข้าสู่ระบบ |
+| `LIBRARY_ACCESS_CODE` | รหัสสำหรับอนุญาตอุปกรณ์ในห้องสมุด |
+| `LIBRARY_ACCESS_SESSION_TOKEN` | ค่าโทเคนที่ใช้เก็บในคุกกี้เมื่อยืนยันอุปกรณ์แล้ว |
 
 ### โครงสร้างฐานข้อมูล
 ไฟล์ `lib/db.ts` จะตรวจสอบและสร้าง schema ให้โดยอัตโนมัติเมื่อแอปเริ่มต้น:
@@ -143,12 +146,19 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 | `GOOGLE_SHEETS_SPREADSHEET_ID` | ID ของ Spreadsheet |
 | `GOOGLE_SHEETS_STUDENTS_SHEET` / `GOOGLE_SHEETS_ATTENDANCE_SHEET` | ชื่อชีตรายชื่อนักเรียนและการเข้าใช้ |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` / `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` | ข้อมูล Service Account ที่มีสิทธิ์แก้ไขชีต |
+| `LIBRARY_ACCESS_CODE`, `LIBRARY_ACCESS_SESSION_TOKEN` | รหัสสำหรับอนุญาตอุปกรณ์ + ค่า session หลังปลดล็อก |
 
 ### ขั้นตอนสำคัญ
 1. สร้าง Spreadsheet ที่มีสองชีต (เช่น `Students` และ `Attendance`)
 2. แชร์ให้ Service Account ที่สร้างไว้ด้วยสิทธิ์ Editor
 3. คัดลอก ID/ชื่อชีตมาใส่ใน `.env`
 4. ระบบ `lib/google-sheets.ts` จะสร้างหัวคอลัมน์และเตรียมโครงสร้างให้อัตโนมัติ
+
+## การยืนยันอุปกรณ์ก่อนใช้งานครั้งแรก
+- กำหนด `LIBRARY_ACCESS_CODE` และ `LIBRARY_ACCESS_SESSION_TOKEN` ในไฟล์ `.env` ของเวอร์ชันที่ใช้งาน
+- เมื่อเปิดหน้าเว็บครั้งแรก ต้องกรอกรหัสอุปกรณ์นี้เพื่อปลดล็อก และระบบจะบันทึกคุกกี้ไว้ในเบราว์เซอร์นั้นๆ
+- ทุก API (ยกเว้น `/api/access` และ `/api/health`) จะถูกบล็อกหากไม่มีคุกกี้ดังกล่าว ทำให้ไม่สามารถเรียกใช้งานจากอุปกรณ์ภายนอกได้
+- หากต้องการเปลี่ยนรหัส ให้ปรับค่าใน `.env` และแจ้งรหัสใหม่กับอุปกรณ์ที่ได้รับอนุญาต
 
 ## สคริปต์ที่ใช้บ่อย
 | คำสั่ง | คำอธิบาย |

@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState, useEffect, type ReactNode } from "react"
+import { useState, useEffect, type FormEvent, type ReactNode } from "react"
 import StudentLogin from "@/components/student-login"
 import StudentRegister from "@/components/student-register"
 import AdminLogin from "@/components/admin-login"
@@ -15,9 +15,45 @@ export default function Home() {
   const [studentId, setStudentId] = useState("")
   const [mounted, setMounted] = useState(false)
   const [dbError, setDbError] = useState<string | null>(null)
+  const [accessReady, setAccessReady] = useState(false)
+  const [hasAccess, setHasAccess] = useState(false)
+  const [accessCode, setAccessCode] = useState("")
+  const [accessError, setAccessError] = useState("")
+  const [accessSubmitting, setAccessSubmitting] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+    const verifyAccess = async () => {
+      try {
+        const response = await fetch("/api/access", { cache: "no-store" })
+        if (!response.ok) {
+          throw new Error("unauthorized")
+        }
+        if (!ignore) {
+          setHasAccess(true)
+        }
+      } catch {
+        if (!ignore) {
+          setHasAccess(false)
+        }
+      } finally {
+        if (!ignore) {
+          setAccessReady(true)
+        }
+      }
+    }
+    verifyAccess()
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasAccess) return
     let ignore = false
     const verifySession = async () => {
       const authenticated = await checkAdminSession()
@@ -29,9 +65,10 @@ export default function Home() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [hasAccess])
 
   useEffect(() => {
+    if (!hasAccess) return
     let ignore = false
     const checkHealth = async () => {
       try {
@@ -55,7 +92,71 @@ export default function Home() {
       ignore = true
       clearInterval(timer)
     }
-  }, [])
+  }, [hasAccess])
+
+  const handleAccessSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setAccessSubmitting(true)
+    setAccessError("")
+    try {
+      const response = await fetch("/api/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: accessCode }),
+      })
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(payload.error || "รหัสไม่ถูกต้อง")
+      }
+      setHasAccess(true)
+      setAccessCode("")
+    } catch (error) {
+      setAccessError((error as Error).message || "รหัสไม่ถูกต้อง")
+    } finally {
+      setAccessSubmitting(false)
+    }
+  }
+
+  if (!accessReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
+        กำลังตรวจสอบสิทธิ์การใช้งานอุปกรณ์...
+      </div>
+    )
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-md">
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Library Device Access</p>
+          <h1 className="text-2xl font-bold text-slate-900">ยืนยันอุปกรณ์ก่อนเข้าใช้งาน</h1>
+          <p className="text-sm text-slate-600">
+            โปรดระบุรหัสสำหรับอุปกรณ์ที่ได้รับจากศูนย์การเรียนรู้ เพื่อป้องกันการเข้าใช้งานจากภายนอก
+          </p>
+          <form onSubmit={handleAccessSubmit} className="space-y-4">
+            <input
+              type="password"
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="กรอกรหัสอุปกรณ์"
+              value={accessCode}
+              onChange={(event) => setAccessCode(event.target.value)}
+              disabled={accessSubmitting}
+              required
+            />
+            {accessError && <p className="text-sm text-red-600">{accessError}</p>}
+            <button
+              type="submit"
+              disabled={!accessCode || accessSubmitting}
+              className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {accessSubmitting ? "กำลังตรวจสอบ..." : "ยืนยันรหัส"}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   if (!mounted) return null
 
