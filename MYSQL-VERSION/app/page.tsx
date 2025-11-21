@@ -160,7 +160,12 @@ export default function Home() {
           </form>
           <p className="text-center text-xs text-slate-400">
             © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by{" "}
-            <a href="https://github.com/PGTHEGOD" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+            <a
+              href="https://github.com/PGTHEGOD"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-700 underline underline-offset-2"
+            >
               Park AKA PG Dev.
             </a>
           </p>
@@ -230,7 +235,7 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
               <Image src="/assumption-rayoung.png" alt="Assumption College Rayong" fill className="object-contain p-2" priority />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-blue-500">Assumption College Rayong</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-blue-700">Assumption College Rayong</p>
               <p className="text-lg font-semibold text-slate-900">ระบบลงทะเบียนเข้าใช้ห้องสมุด</p>
             </div>
           </div>
@@ -248,7 +253,12 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
       <main className="flex-1">{content}</main>
       <footer className="mt-auto border-t border-slate-100 px-4 py-3 text-center text-xs text-slate-500 shrink-0">
         © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by{" "}
-        <a href="https://github.com/PGTHEGOD" className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+        <a
+          href="https://github.com/PGTHEGOD"
+          className="text-blue-700 underline underline-offset-2"
+          target="_blank"
+          rel="noreferrer"
+        >
           Park AKA PG Dev.
         </a>
       </footer>
