@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAccessCookieName, getSessionToken, isAccessEnabled, isAuthorizedCookie, verifyAccessCode } from "@/lib/access-control"
+import {
+  getAccessCookieName,
+  getSessionToken,
+  isAccessEnabled,
+  isAuthorizedCookie,
+  verifyAccessCode,
+} from "@/lib/access-control"
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
   if (!code) {
     return NextResponse.json({ error: "กรุณาระบุรหัสสำหรับอุปกรณ์" }, { status: 400 })
   }
-  if (!verifyAccessCode(code)) {
+  if (!(await verifyAccessCode(code))) {
     return NextResponse.json({ error: "รหัสไม่ถูกต้อง" }, { status: 401 })
   }
 
