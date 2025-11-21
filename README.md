@@ -124,7 +124,6 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 | `MYSQL_HOST` `MYSQL_PORT` | ข้อมูลการเชื่อม MySQL |
 | `MYSQL_DATABASE` | ชื่อฐานข้อมูล |
 | `MYSQL_USER` `MYSQL_PASSWORD` | สิทธิ์ที่อนุญาตให้สร้างตาราง/อ่าน/เขียน |
-| `MYSQL_ROOT_PASSWORD` | รหัส root (กรณีใช้งานร่วม) |
 | `ADMIN_PASSWORD` | รหัสผ่านผู้ดูแลระบบ (ฝั่ง UI) |
 | `ADMIN_SESSION_TOKEN` | ชื่อเซสชันคุกกี้ที่ใช้ผูกการเข้าสู่ระบบ |
 | `LIBRARY_ACCESS_CODE` | รหัสสำหรับอนุญาตอุปกรณ์ในห้องสมุด |
