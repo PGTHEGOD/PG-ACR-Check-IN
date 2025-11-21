@@ -8,7 +8,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'Assumption College Rayong Library',
-  description: 'ระบบลงทะเบียนและจัดการการเข้าใช้ศูนย์การเรียนรู้ โรงเรียนอัสสัมชัญระยอง',
+  description: 'ระบบลงทะเบียนและจัดการการเข้าใช้ห้องสมุด โรงเรียนอัสสัมชัญระยอง',
   icons: {
     icon: [
       {

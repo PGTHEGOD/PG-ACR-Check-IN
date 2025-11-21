@@ -132,7 +132,7 @@ export default function Home() {
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">Library Device Access</p>
           <h1 className="text-2xl font-bold text-slate-900">ยืนยันอุปกรณ์ก่อนเข้าใช้งาน</h1>
           <p className="text-sm text-slate-600">
-            โปรดระบุรหัสสำหรับอุปกรณ์ที่ได้รับจากศูนย์การเรียนรู้ เพื่อป้องกันการเข้าใช้งานจากภายนอก
+            โปรดระบุรหัสสำหรับอุปกรณ์ที่ได้รับจากห้องสมุด เพื่อป้องกันการเข้าใช้งานจากภายนอก
           </p>
           <form onSubmit={handleAccessSubmit} className="space-y-4">
             <input
