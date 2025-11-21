@@ -4,7 +4,8 @@ const ACCESS_COOKIE = "acr_device_access"
 const accessCode = process.env.LIBRARY_ACCESS_CODE?.trim() || ""
 const accessCodeHash = process.env.LIBRARY_ACCESS_CODE_HASH?.trim() || ""
 const sessionTokenEnv = process.env.LIBRARY_ACCESS_SESSION_TOKEN?.trim() || ""
-const sessionToken = sessionTokenEnv || (accessCode ? `acr-session-${accessCode}` : "")
+const sessionSeed = sessionTokenEnv || accessCode || accessCodeHash
+const sessionToken = sessionSeed ? hashCode(sessionSeed) : ""
 
 function hashCode(code: string) {
   return createHash("sha256").update(code).digest("hex")

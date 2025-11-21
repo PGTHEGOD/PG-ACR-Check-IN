@@ -158,7 +158,9 @@ export default function Home() {
               {accessSubmitting ? "กำลังตรวจสอบ..." : "ยืนยันรหัส"}
             </button>
           </form>
-          <p className="text-center text-xs text-slate-400">© {new Date().getFullYear()} Assumption College Rayong Library</p>
+          <p className="text-center text-xs text-slate-400">
+            © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by Park AKA PG Dev.
+          </p>
         </div>
       </div>
     )
