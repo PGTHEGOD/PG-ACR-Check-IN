@@ -159,7 +159,10 @@ export default function Home() {
             </button>
           </form>
           <p className="text-center text-xs text-slate-400">
-            © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by Park AKA PG Dev.
+            © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by{" "}
+            <a href="https://github.com/PGTHEGOD" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+              Park AKA PG Dev.
+            </a>
           </p>
         </div>
       </div>
@@ -243,7 +246,10 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
 
       <main className="flex-1">{content}</main>
       <footer className="mt-auto border-t border-slate-100 px-4 py-3 text-center text-xs text-slate-500 shrink-0">
-        © {new Date().getFullYear()} Assumption College Rayong Library · Developed by Akarapach Yootsukprasert (Park AKA PG Dev.)
+        © {new Date().getFullYear()} Assumption College Rayong Library · Dev. by{" "}
+        <a href="https://github.com/PGTHEGOD" className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+          Park AKA PG Dev.
+        </a>
       </footer>
     </div>
   )

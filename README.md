@@ -3,7 +3,7 @@
 
 > โปรเจกต์นี้มี 2 รูปแบบให้เลือกใช้งาน ได้แก่ **MYSQL-VERSION** (เชื่อม MySQL โดยตรง) และ **SHEET-VERSION** (อ่าน/เขียนข้อมูลผ่าน Google Sheets สำหรับทีมที่ไม่ต้องการดูแลฐานข้อมูลเอง)
 
-**พัฒนาโดย Akarapach Yootsukprasert (Park AKA PG Dev.) นักเรียนชั้น ม.6 โรงเรียนอัสสัมชัญระยอง ปีการศึกษา 2025**
+**พัฒนาโดย [Akarapach Yootsukprasert (Park AKA PG Dev.)](https://github.com/PGTHEGOD) นักเรียนชั้น ม.6 โรงเรียนอัสสัมชัญระยอง ปีการศึกษา 2025**
 
 ## สารบัญ
 1. [ภาพรวมโปรเจกต์](#ภาพรวมโปรเจกต์)
@@ -234,4 +234,4 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 5. สำหรับ SHEET-VERSION ให้ใส่ค่า Service Account ใน Secret Manager หรือ Environment Variables ของแพลตฟอร์ม
 
 ---
-พัฒนาโดย Akarapach Yootsukprasert (Park AKA PG Dev.) นักเรียนชั้น ม.6 โรงเรียนอัสสัมชัญระยอง ปีการศึกษา 2025 – หากมีข้อเสนอแนะหรือพบปัญหา สามารถเปิด Issue ใน GitHub Repository `PGTHEGOD/PG-ACR-Check-IN`
+พัฒนาโดย [Akarapach Yootsukprasert (Park AKA PG Dev.)](https://github.com/PGTHEGOD) นักเรียนชั้น ม.6 โรงเรียนอัสสัมชัญระยอง ปีการศึกษา 2025 – หากมีข้อเสนอแนะหรือพบปัญหา สามารถเปิด Issue ใน GitHub Repository `PGTHEGOD/PG-ACR-Check-IN`
