@@ -139,9 +139,20 @@ async function fetchTodayAttendance(studentId: number): Promise<ExistingAttendan
   )
 }
 
-export async function createAttendanceEntry(studentCode: string, purpose: string): Promise<void> {
-  const trimmedPurpose = purpose.trim()
-  if (!studentCode || !trimmedPurpose) {
+function normalizePurposeList(purposes: string[]): string[] {
+  const seen = new Set<string>()
+  for (const purpose of purposes) {
+    const trimmed = purpose?.toString?.().trim()
+    if (trimmed) {
+      seen.add(trimmed)
+    }
+  }
+  return Array.from(seen)
+}
+
+export async function createAttendanceEntry(studentCode: string, purposes: string[]): Promise<void> {
+  const normalizedPurposes = normalizePurposeList(purposes)
+  if (!studentCode || !normalizedPurposes.length) {
     throw new Error("กรุณาระบุเลขประจำตัวและจุดประสงค์")
   }
 
@@ -159,22 +170,20 @@ export async function createAttendanceEntry(studentCode: string, purpose: string
        ON DUPLICATE KEY UPDATE
          attendance_time = VALUES(attendance_time),
          purposes = VALUES(purposes)`,
-      [student.id, JSON.stringify([trimmedPurpose])]
+      [student.id, JSON.stringify(normalizedPurposes)]
     )
     return
   }
 
   const currentPurposes = normalizePurposes(existing.purposes)
-  if (!currentPurposes.includes(trimmedPurpose)) {
-    currentPurposes.push(trimmedPurpose)
-  }
+  const mergedPurposes = Array.from(new Set([...currentPurposes, ...normalizedPurposes]))
 
   await execute(
     `UPDATE attendance_logs
      SET attendance_time = CURRENT_TIME(),
          purposes = ?
      WHERE id = ?`,
-    [JSON.stringify(currentPurposes), existing.id]
+    [JSON.stringify(mergedPurposes), existing.id]
   )
 }
 

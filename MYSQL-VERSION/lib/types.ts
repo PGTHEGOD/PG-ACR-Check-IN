@@ -9,6 +9,7 @@ export interface StudentRecord {
   lastName: string
   createdAt: string
   updatedAt: string
+  points: number
 }
 
 export interface AttendanceRecord {

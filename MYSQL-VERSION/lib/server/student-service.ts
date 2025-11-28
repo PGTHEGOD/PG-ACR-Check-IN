@@ -72,12 +72,18 @@ export async function listStudents(options: ListStudentsOptions = {}): Promise<P
           'firstName', sub.first_name,
           'lastName', sub.last_name,
           'createdAt', DATE_FORMAT(sub.created_at, '%Y-%m-%dT%H:%i:%sZ'),
-          'updatedAt', DATE_FORMAT(sub.updated_at, '%Y-%m-%dT%H:%i:%sZ')
+          'updatedAt', DATE_FORMAT(sub.updated_at, '%Y-%m-%dT%H:%i:%sZ'),
+          'points', COALESCE(sub.points, 0)
         ) ORDER BY sub.class_level, sub.room, sub.student_number, sub.first_name, sub.last_name
       ), JSON_ARRAY())
      FROM (
-        SELECT s.*
+        SELECT s.*, COALESCE(score.total_points, 0) AS points
         FROM students s
+        LEFT JOIN (
+          SELECT student_id, SUM(change_value) AS total_points
+          FROM library_scores
+          GROUP BY student_id
+        ) score ON score.student_id = s.student_code
         ${clause}
         ORDER BY s.class_level, s.room, s.student_number, s.first_name, s.last_name
         LIMIT ?
@@ -111,9 +117,15 @@ export async function getStudentByCode(studentCode: string): Promise<StudentReco
         'firstName', s.first_name,
         'lastName', s.last_name,
         'createdAt', DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ'),
-        'updatedAt', DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%sZ')
+        'updatedAt', DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%sZ'),
+        'points', COALESCE(score.total_points, 0)
       )
      FROM students s
+     LEFT JOIN (
+        SELECT student_id, SUM(change_value) AS total_points
+        FROM library_scores
+        GROUP BY student_id
+     ) score ON score.student_id = s.student_code
      WHERE s.student_code = ?
      LIMIT 1`,
     null,

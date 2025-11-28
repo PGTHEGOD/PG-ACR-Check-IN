@@ -7,12 +7,14 @@ import StudentRegister from "@/components/student-register"
 import AdminLogin from "@/components/admin-login"
 import AdminStudentManagement from "@/components/admin-student-management"
 import { checkAdminSession } from "@/lib/admin-auth"
+import type { StudentRecord } from "@/lib/types"
 
 type Page = "student-login" | "student-register" | "admin-login" | "admin-dashboard"
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<Page>("student-login")
   const [studentId, setStudentId] = useState("")
+  const [activeStudent, setActiveStudent] = useState<StudentRecord | null>(null)
   const [mounted, setMounted] = useState(false)
   const [dbError, setDbError] = useState<string | null>(null)
   const [accessReady, setAccessReady] = useState(false)
@@ -24,6 +26,12 @@ export default function Home() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (currentPage !== "student-register") {
+      setActiveStudent(null)
+    }
+  }, [currentPage])
 
   useEffect(() => {
     let ignore = false
@@ -190,6 +198,7 @@ export default function Home() {
   }
 
   const showAdminShortcut = currentPage !== "admin-dashboard"
+  const studentSummary = currentPage === "student-register" ? activeStudent : null
 
   let content: ReactNode = null
   if (currentPage === "student-login") {
@@ -212,6 +221,7 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
             setCurrentPage("student-login")
             setStudentId("")
           }}
+          onStudentChange={setActiveStudent}
         />
       </div>
     )
@@ -229,23 +239,59 @@ bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="border-b border-slate-100 bg-white px-4 py-4">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-blue-50">
-              <Image src="/assumption-rayoung.png" alt="Assumption College Rayong" fill className="object-contain p-2" priority />
+        <div className="mx-auto w-full max-w-5xl space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-blue-50">
+                <Image
+                  src="/assumption-rayoung.png"
+                  alt="Assumption College Rayong"
+                  fill
+                  className="object-contain p-2"
+                  priority
+                />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-blue-700">Assumption College Rayong</p>
+                <p className="text-lg font-semibold text-slate-900">ระบบลงทะเบียนเข้าใช้ห้องสมุด</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-blue-700">Assumption College Rayong</p>
-              <p className="text-lg font-semibold text-slate-900">ระบบลงทะเบียนเข้าใช้ห้องสมุด</p>
-            </div>
+            {showAdminShortcut && (
+              <button
+                onClick={() => setCurrentPage("admin-login")}
+                className="self-start rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 md:self-auto"
+              >
+                ผู้ดูแลระบบ
+              </button>
+            )}
           </div>
-          {showAdminShortcut && (
-            <button
-              onClick={() => setCurrentPage("admin-login")}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              ผู้ดูแลระบบ
-            </button>
+          {studentSummary && (
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700 shadow-sm">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">กำลังลงทะเบียน</p>
+                  <p className="text-lg font-semibold text-slate-900">
+                    {studentSummary.title ? `${studentSummary.title} ` : ""}
+                    {studentSummary.firstName} {studentSummary.lastName}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-blue-700">
+                  <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-blue-700">
+                    รหัส {studentSummary.studentCode}
+                  </span>
+                  <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-blue-700">
+                    ชั้น {studentSummary.classLevel}
+                    {studentSummary.room ? `/${studentSummary.room}` : ""}
+                  </span>
+                  {studentSummary.number && (
+                    <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-blue-700">เลขที่ {studentSummary.number}</span>
+                  )}
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
+                    แต้ม {studentSummary.points.toLocaleString()} คะแนน
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </header>

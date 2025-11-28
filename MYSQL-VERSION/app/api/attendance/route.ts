@@ -20,11 +20,25 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const studentCode = body?.studentCode?.toString() ?? ""
-    const purpose = body?.purpose?.toString() ?? ""
-    if (!studentCode || !purpose) {
+    const rawPurposes = body?.purposes
+
+    let purposes: string[] = []
+    if (Array.isArray(rawPurposes)) {
+      purposes = rawPurposes.map((item) => (item ?? "").toString())
+    } else if (typeof rawPurposes === "string") {
+      purposes = [rawPurposes]
+    } else if (body?.purpose) {
+      const legacy = body.purpose.toString()
+      if (legacy) {
+        purposes = [legacy]
+      }
+    }
+
+    if (!studentCode || !purposes.length) {
       return NextResponse.json({ error: "กรุณาระบุข้อมูลให้ครบ" }, { status: 400 })
     }
-    await createAttendanceEntry(studentCode, purpose)
+
+    await createAttendanceEntry(studentCode, purposes)
     return NextResponse.json({ success: true })
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })

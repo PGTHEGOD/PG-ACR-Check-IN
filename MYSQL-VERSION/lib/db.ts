@@ -109,6 +109,18 @@ async function ensureSchema(): Promise<void> {
           CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES ${database}.students(id) ON DELETE CASCADE
         ) CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci`
       )
+
+      await serverConnection.query(
+        `CREATE TABLE IF NOT EXISTS ${database}.library_scores (
+          id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+          student_id VARCHAR(32) NOT NULL,
+          change_value INT NOT NULL,
+          note VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id),
+          INDEX idx_scores_student (student_id)
+        ) CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci`
+      )
     } finally {
       await serverConnection.end()
     }
