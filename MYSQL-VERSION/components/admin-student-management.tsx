@@ -39,7 +39,7 @@ const getClassLevelKey = (classLevel?: string | null) => {
 const formatClassLevelLabel = (classLevel?: string | null) => {
   const normalized = getClassLevelKey(classLevel)
   if (normalized === "ไม่ระบุ") return normalized
-  return normalized.startsWith("ชั้น") ? normalized : `ชั้น ${normalized}`
+  return `${normalized}`
 }
 
 const UTF8_BOM = "\ufeff" // ensures Excel reads Thai text correctly
