@@ -2,6 +2,8 @@
 ระบบลงทะเบียนและติดตามการเข้าใช้ห้องสมุดของโรงเรียนอัสสัมชัญระยอง พัฒนาด้วย Next.js 16, React 19 และชุด UI แบบ Tailwind เพื่อให้ทั้งนักเรียนและผู้ดูแลห้องสมุดทำงานได้รวดเร็ว มีการตรวจสอบตัวตน, บันทึกการเข้าใช้, วิเคราะห์สถิติ และรองรับการนำเข้ารายชื่อนักเรียนจากไฟล์ JSON
 
 > โปรเจกต์นี้มี 2 รูปแบบให้เลือกใช้งาน ได้แก่ **MYSQL-VERSION** (เชื่อม MySQL โดยตรง) และ **SHEET-VERSION** (อ่าน/เขียนข้อมูลผ่าน Google Sheets สำหรับทีมที่ไม่ต้องการดูแลฐานข้อมูลเอง)
+>
+> ⚠️ **SHEET-VERSION ถูกประกาศยุติการพัฒนาอย่างเป็นทางการ** จะไม่มีการอัปเดตหรือแก้ไขข้อบกพร่องเพิ่มเติม โปรดใช้งาน **MYSQL-VERSION** เพื่อรับฟีเจอร์ล่าสุดและการซัพพอร์ต
 
 **พัฒนาโดย [Akarapach Yootsukprasert (Park AKA PG Dev.)](https://github.com/PGTHEGOD) นักเรียนชั้น ม.6 โรงเรียนอัสสัมชัญระยอง ปีการศึกษา 2025**
 
@@ -15,7 +17,7 @@
 7. [วิธีติดตั้งและรันโปรเจกต์](#วิธีติดตั้งและรันโปรเจกต์)
 8. [การใช้งาน Docker](#การใช้งาน-docker)
 9. [การตั้งค่า MYSQL-VERSION](#การตั้งค่า-mysql-version)
-10. [การตั้งค่า SHEET-VERSION](#การตั้งค่า-sheet-version)
+10. [การตั้งค่า SHEET-VERSION (Discontinued)](#การตั้งค่า-sheet-version-discontinued)
 11. [สคริปต์ที่ใช้บ่อย](#สคริปต์ที่ใช้บ่อย)
 12. [การใช้งานระบบ](#การใช้งานระบบ)
 13. [การนำเข้ารายชื่อจากไฟล์ JSON](#การนำเข้ารายชื่อจากไฟล์-json)
@@ -30,6 +32,7 @@
 - รองรับภาษาไทยเต็มรูปแบบ (Collation และ Sorting ใช้ `Intl.Collator("th-TH")`)
 
 ## รูปแบบการใช้งาน
+_SHEET-VERSION อยู่ในสถานะ Discontinued (ไม่พัฒนา/ไม่ซัพพอร์ต) ตารางนี้คงไว้เพื่ออ้างอิงข้อมูลเดิมเท่านั้น_
 | รายการ | MYSQL-VERSION | SHEET-VERSION |
 | --- | --- | --- |
 | แหล่งข้อมูล | MySQL จริง (สร้าง schema อัตโนมัติ) | Google Sheets 2 ชุด (Students & Attendance) |
@@ -56,7 +59,7 @@
 │   ├── app            # หน้า Next.js + API Routes
 │   ├── components     # คอมโพเนนต์ UI/แดชบอร์ด
 │   └── lib            # DB connector, service layer
-└── SHEET-VERSION      # เวอร์ชันเชื่อม Google Sheets
+└── SHEET-VERSION      # เวอร์ชันเชื่อม Google Sheets (Discontinued/Legacy)
     ├── app
     ├── components
     └── lib            # Google Sheets client, services
@@ -69,14 +72,14 @@
 - [TypeScript 5](https://www.typescriptlang.org/)
 - [Tailwind CSS 4](https://tailwindcss.com/) + shadcn/ui components
 - [mysql2](https://github.com/sidorares/node-mysql2) (เฉพาะ MYSQL-VERSION)
-- [googleapis Sheets API v4](https://github.com/googleapis/google-api-nodejs-client) (เฉพาะ SHEET-VERSION)
+- [googleapis Sheets API v4](https://github.com/googleapis/google-api-nodejs-client) (เฉพาะ SHEET-VERSION legacy)
 - [Vercel Analytics](https://vercel.com/docs/analytics) (พร้อมใช้งาน)
 
 ## การเตรียมสภาพแวดล้อม
 1. ติดตั้ง Node.js 20 ขึ้นไป (เวอร์ชันที่ Next.js 16 รองรับ)
 2. แนะนำให้ใช้ [pnpm](https://pnpm.io/) 9+ หรือ Bun 1.1+ เพื่อให้อ้างอิง `pnpm-lock.yaml`/`bun.lock` ได้ตรง
 3. ติดตั้ง MySQL Server (กรณีใช้ MYSQL-VERSION)
-4. สร้าง Service Account บน Google Cloud พร้อมสิทธิ์อ่าน/เขียน Sheets (กรณีใช้ SHEET-VERSION)
+4. (เฉพาะผู้ที่ยังดูแลระบบเดิม) สร้าง Service Account บน Google Cloud พร้อมสิทธิ์อ่าน/เขียน Sheets หากจำเป็นต้องใช้ SHEET-VERSION legacy
 
 ## วิธีติดตั้งและรันโปรเจกต์
 ```bash
@@ -84,7 +87,7 @@ git clone https://github.com/PGTHEGOD/PG-ACR-Check-IN.git
 cd PG-ACR-Check-IN
 
 # เลือกเวอร์ชันที่ต้องการ
-cd MYSQL-VERSION          # หรือ cd SHEET-VERSION
+cd MYSQL-VERSION          # หรือ cd SHEET-VERSION (legacy / ไม่แนะนำให้เริ่มโปรเจกต์ใหม่)
 
 pnpm install              # ติดตั้ง dependencies
 pnpm dev                  # เปิดโหมดพัฒนา
@@ -101,7 +104,7 @@ docker build \
   --build-arg APP_VARIANT=MYSQL-VERSION \
   -t acr-mysql .
 
-# หรือสร้างสำหรับเวอร์ชัน Google Sheets
+# หรือสร้างสำหรับเวอร์ชัน Google Sheets (เฉพาะ legacy / discontinued)
 docker build \
   --build-arg APP_VARIANT=SHEET-VERSION \
   -t acr-sheets .
@@ -114,6 +117,7 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 > - คอนเทนเนอร์สำหรับ MYSQL-VERSION จะเชื่อมต่อฐานข้อมูล MySQL ที่รันอยู่ภายนอกตามค่าที่กำหนดใน `.env` (`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`). ตัวอิมเมจไม่ติดตั้ง MySQL มาให้
 > - อย่าลืมสร้างไฟล์ `.env.local` ให้พร้อมก่อนสั่ง build/run (สามารถสร้างไฟล์เฉพาะ Docker เช่น `.env.docker`)
 > - แนะนำให้จัดเก็บรหัสผ่านฐานข้อมูลผ่าน secret manager หรือ environment variables ของ platform เพื่อความปลอดภัย
+> - การ build `APP_VARIANT=SHEET-VERSION` มีไว้สำหรับผู้ที่ยังต้องดูแลระบบเดิมเท่านั้น ไม่มีการการันตีแพตช์หรือฟีเจอร์ใหม่อีกต่อไป
 
 ## การตั้งค่า MYSQL-VERSION
 ### ไฟล์ `.env`
@@ -135,7 +139,8 @@ docker run --env-file MYSQL-VERSION/.env.local -p 3000:3000 acr-mysql
 - ตาราง `students` มี `UNIQUE student_code` เพื่อกันข้อมูลซ้ำ และบันทึกชื่อ, ชั้น, ห้อง, เลขที่, คำนำหน้า
 - ตาราง `attendance_logs` เชื่อม `student_id`, จำกัดให้ 1 แถวต่อวัน (`UNIQUE student_id + attendance_date`) เพื่อไม่ให้ล็อกอินซ้ำเวลาเดียวกัน
 
-## การตั้งค่า SHEET-VERSION
+## การตั้งค่า SHEET-VERSION (Discontinued)
+> หมายเหตุ: สคริปต์ Sheet version ถูกยุติการอัปเดตแล้ว ส่วนนี้มีไว้เพื่อทีมที่ยังคงต้องดูแลระบบเดิมเอง ผู้พัฒนาแนะนำให้ย้ายไปใช้ MYSQL-VERSION
 ### ไฟล์ `.env`
 สร้าง `.env.local` ภายใต้ `SHEET-VERSION/` พร้อมค่าดังนี้
 

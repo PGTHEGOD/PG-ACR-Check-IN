@@ -31,6 +31,19 @@ const formatClassRoom = (classLevel?: string | null, room?: string | null) => {
   return roomLabel ? `${level}/${roomLabel}` : level
 }
 
+const getClassLevelKey = (classLevel?: string | null) => {
+  const level = (classLevel ?? "").trim()
+  return level || "ไม่ระบุ"
+}
+
+const formatClassLevelLabel = (classLevel?: string | null) => {
+  const normalized = getClassLevelKey(classLevel)
+  if (normalized === "ไม่ระบุ") return normalized
+  return normalized.startsWith("ชั้น") ? normalized : `ชั้น ${normalized}`
+}
+
+const UTF8_BOM = "\ufeff" // ensures Excel reads Thai text correctly
+
 interface AdminStudentManagementProps {
   onLogout: () => void
 }
@@ -270,17 +283,40 @@ export default function AdminStudentManagement({ onLogout }: AdminStudentManagem
   const handleExportSummary = () => {
     if (!attendance.length) return
     const header = ["CLASS", ...purposeColumns]
-    let csv = header.join(",") + "\n"
+    const totals: Record<string, number> = {}
+    purposeColumns.forEach((purpose) => {
+      totals[purpose] = 0
+    })
 
-    sortedClassRows.forEach((row) => {
-      const line = [row.classLabel, ...purposeColumns.map((purpose) => row.counts[purpose] ?? 0)]
+    const grouped = new Map<string, { label: string; counts: Record<string, number> }>()
+    attendance.forEach((record) => {
+      const key = getClassLevelKey(record.classLevel)
+      if (!grouped.has(key)) {
+        const baseCounts: Record<string, number> = {}
+        purposeColumns.forEach((purpose) => {
+          baseCounts[purpose] = 0
+        })
+        grouped.set(key, { label: formatClassLevelLabel(record.classLevel), counts: baseCounts })
+      }
+      const entry = grouped.get(key)!
+      record.purposes.forEach((purpose) => {
+        entry.counts[purpose] = (entry.counts[purpose] ?? 0) + 1
+        totals[purpose] = (totals[purpose] ?? 0) + 1
+      })
+    })
+
+    const sortedExportRows = Array.from(grouped.values()).sort((a, b) => classCollator.compare(a.label, b.label))
+
+    let csv = header.join(",") + "\n"
+    sortedExportRows.forEach((row) => {
+      const line = [row.label, ...purposeColumns.map((purpose) => row.counts[purpose] ?? 0)]
       csv += `${line.join(",")}\n`
     })
 
-    const totalsLine = ["รวม", ...purposeColumns.map((purpose) => classPurposeSummary.totals[purpose] ?? 0)]
+    const totalsLine = ["รวม", ...purposeColumns.map((purpose) => totals[purpose] ?? 0)]
     csv += totalsLine.join(",")
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const blob = new Blob([`${UTF8_BOM}${csv}`], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
     link.download = `library_class_summary_${selectedMonth}.csv`
@@ -289,27 +325,28 @@ export default function AdminStudentManagement({ onLogout }: AdminStudentManagem
 
   const handleExportByClass = () => {
     if (!attendance.length) return
-    const grouped = new Map<string, AttendanceRecord[]>()
+    const grouped = new Map<string, { label: string; records: AttendanceRecord[] }>()
     attendance.forEach((record) => {
-      const key = formatClassRoom(record.classLevel, record.room)
-      if (!grouped.has(key)) grouped.set(key, [])
-      grouped.get(key)!.push(record)
+      const key = getClassLevelKey(record.classLevel)
+      if (!grouped.has(key)) {
+        grouped.set(key, { label: formatClassLevelLabel(record.classLevel), records: [] })
+      }
+      grouped.get(key)!.records.push(record)
     })
 
     const header = ["CLASS", "ROOM", "STUDENT_CODE", "NAME", "PURPOSES", "DATE", "TIME"]
     let csv = header.join(",") + "\n"
 
-    const sortedClasses = Array.from(grouped.keys()).sort((a, b) => classCollator.compare(a, b))
-    sortedClasses.forEach((classLabel) => {
-      const rows = grouped.get(classLabel) || []
-      rows
+    const sortedGroups = Array.from(grouped.values()).sort((a, b) => classCollator.compare(a.label, b.label))
+    sortedGroups.forEach(({ label, records }) => {
+      records
         .slice()
         .sort((a, b) => classCollator.compare(`${a.firstName}${a.lastName}`, `${b.firstName}${b.lastName}`))
         .forEach((record) => {
           const fullName = `${record.title ? `${record.title} ` : ""}${record.firstName} ${record.lastName}`.trim().replace(/"/g, '""')
           const purposesText = record.purposes.join(" / ").replace(/"/g, '""')
           const line = [
-            classLabel,
+            label,
             record.room || "",
             record.studentCode,
             `"${fullName}"`,
@@ -321,7 +358,7 @@ export default function AdminStudentManagement({ onLogout }: AdminStudentManagem
         })
     })
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const blob = new Blob([`${UTF8_BOM}${csv}`], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")
     link.href = URL.createObjectURL(blob)
     link.download = `library_class_detail_${selectedMonth}.csv`
