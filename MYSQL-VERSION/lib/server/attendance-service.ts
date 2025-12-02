@@ -1,6 +1,6 @@
 import "server-only"
 
-import { execute, queryJson } from "@/lib/db"
+import { execute, queryRows } from "@/lib/db"
 import type { AttendanceRecord, AttendanceResponse, AttendanceStats } from "@/lib/types"
 import { getStudentByCode } from "./student-service"
 
@@ -40,6 +40,10 @@ function resolveMonthRange(month?: string | null) {
   return { startDate, endDate }
 }
 
+interface AttendanceRow extends Omit<AttendanceRecord, "purposes"> {
+  purposes: unknown
+}
+
 export async function listAttendance(options: AttendanceOptions = {}): Promise<AttendanceResponse> {
   const { startDate, endDate } = resolveMonthRange(options.month)
   const search = options.search?.trim()
@@ -53,33 +57,33 @@ export async function listAttendance(options: AttendanceOptions = {}): Promise<A
     params.push(likeValue, likeValue, likeValue)
   }
 
-  const records = await queryJson<AttendanceRecord[]>(
-    `SELECT COALESCE(JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'id', a.id,
-          'studentId', a.student_id,
-          'studentCode', s.student_code,
-          'attendanceDate', DATE_FORMAT(a.attendance_date, '%Y-%m-%d'),
-          'attendanceTime', DATE_FORMAT(a.attendance_time, '%H:%i'),
-          'purposes', a.purposes,
-          'classLevel', s.class_level,
-          'room', s.room,
-          'title', s.title,
-          'number', s.student_number,
-          'firstName', s.first_name,
-          'lastName', s.last_name
-        ) ORDER BY a.attendance_date DESC, a.attendance_time DESC
-      ), JSON_ARRAY())
+  const records = await queryRows<AttendanceRow>(
+    `SELECT
+        a.id,
+        a.student_id AS studentId,
+        s.student_code AS studentCode,
+        DATE_FORMAT(a.attendance_date, '%Y-%m-%d') AS attendanceDate,
+        DATE_FORMAT(a.attendance_time, '%H:%i') AS attendanceTime,
+        a.purposes,
+        s.class_level AS classLevel,
+        NULLIF(s.room, '') AS room,
+        NULLIF(s.title, '') AS title,
+        NULLIF(s.student_number, '') AS number,
+        s.first_name AS firstName,
+        s.last_name AS lastName
      FROM attendance_logs a
      INNER JOIN students s ON s.id = a.student_id
      WHERE a.attendance_date BETWEEN ? AND ?
-     ${searchClause}`,
-    [],
+     ${searchClause}
+     ORDER BY a.attendance_date DESC, a.attendance_time DESC`,
     params
   )
 
-  const normalizedRecords = records.map((record) => ({
+  const normalizedRecords: AttendanceRecord[] = records.map((record) => ({
     ...record,
+    room: record.room ?? null,
+    title: record.title ?? null,
+    number: record.number ?? null,
     purposes: normalizePurposes(record.purposes),
   }))
 
@@ -125,18 +129,15 @@ function buildStats(records: AttendanceRecord[]): AttendanceStats {
 }
 
 async function fetchTodayAttendance(studentId: number): Promise<ExistingAttendanceRow | null> {
-  return queryJson<ExistingAttendanceRow | null>(
-    `SELECT JSON_OBJECT(
-        'id', a.id,
-        'purposes', a.purposes
-      )
+  const rows = await queryRows<ExistingAttendanceRow>(
+    `SELECT a.id, a.purposes
      FROM attendance_logs a
      WHERE a.student_id = ?
        AND a.attendance_date = CURRENT_DATE()
      LIMIT 1`,
-    null,
     [studentId]
   )
+  return rows[0] ?? null
 }
 
 function normalizePurposeList(purposes: string[]): string[] {

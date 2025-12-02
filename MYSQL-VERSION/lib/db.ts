@@ -156,6 +156,15 @@ export async function execute(sql: string, params: unknown[] = []): Promise<void
   await pool.query(sql, params)
 }
 
+export async function queryRows<T extends mysql.RowDataPacket>(
+  sql: string,
+  params: unknown[] = []
+): Promise<T[]> {
+  await ensureSchema()
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(sql, params)
+  return rows as T[]
+}
+
 export function getMysqlConfig() {
   return { ...config }
 }

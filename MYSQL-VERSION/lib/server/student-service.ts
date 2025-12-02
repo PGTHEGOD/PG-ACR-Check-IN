@@ -1,6 +1,6 @@
 import "server-only"
 
-import { escapeValue, execute, queryJson } from "@/lib/db"
+import { escapeValue, execute, queryRows } from "@/lib/db"
 import type { PaginatedStudents, StudentImportRow, StudentRecord } from "@/lib/types"
 
 interface ListStudentsOptions {
@@ -60,66 +60,57 @@ export async function listStudents(options: ListStudentsOptions = {}): Promise<P
     classFilter: options.classFilter ?? null,
   })
 
-  const students = await queryJson<StudentRecord[]>(
-    `SELECT COALESCE(JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'id', sub.id,
-          'studentCode', sub.student_code,
-          'classLevel', sub.class_level,
-          'room', sub.room,
-          'number', sub.student_number,
-          'title', sub.title,
-          'firstName', sub.first_name,
-          'lastName', sub.last_name,
-          'createdAt', DATE_FORMAT(sub.created_at, '%Y-%m-%dT%H:%i:%sZ'),
-          'updatedAt', DATE_FORMAT(sub.updated_at, '%Y-%m-%dT%H:%i:%sZ'),
-          'points', COALESCE(sub.points, 0)
-        ) ORDER BY sub.class_level, sub.room, sub.student_number, sub.first_name, sub.last_name
-      ), JSON_ARRAY())
-     FROM (
-        SELECT s.*, COALESCE(score.total_points, 0) AS points
-        FROM students s
-        LEFT JOIN (
-          SELECT student_id, SUM(change_value) AS total_points
-          FROM library_scores
-          GROUP BY student_id
-        ) score ON score.student_id = s.student_code
-        ${clause}
-        ORDER BY s.class_level, s.room, s.student_number, s.first_name, s.last_name
-        LIMIT ?
-        OFFSET ?
-     ) sub`,
-    [],
+  const students = await queryRows<StudentRecord>(
+    `SELECT
+        s.id,
+        s.student_code AS studentCode,
+        s.class_level AS classLevel,
+        NULLIF(s.room, '') AS room,
+        NULLIF(s.student_number, '') AS number,
+        NULLIF(s.title, '') AS title,
+        s.first_name AS firstName,
+        s.last_name AS lastName,
+        DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ') AS createdAt,
+        DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updatedAt,
+        COALESCE(score.total_points, 0) AS points
+     FROM students s
+     LEFT JOIN (
+        SELECT student_id, SUM(change_value) AS total_points
+        FROM library_scores
+        GROUP BY student_id
+     ) score ON score.student_id = s.student_code
+     ${clause}
+     ORDER BY s.class_level, s.room, s.student_number, s.first_name, s.last_name
+     LIMIT ?
+     OFFSET ?`,
     [...params, limit, offset]
   )
 
-  const totalResult = await queryJson<{ total: number }>(
-    `SELECT JSON_OBJECT('total', COUNT(*)) FROM students s ${clause}`,
-    { total: 0 },
+  const totalRows = await queryRows<{ total: number }>(
+    `SELECT COUNT(*) AS total FROM students s ${clause}`,
     params
   )
 
-  return { students, total: totalResult.total }
+  return { students, total: totalRows[0]?.total ?? 0 }
 }
 
 export async function getStudentByCode(studentCode: string): Promise<StudentRecord | null> {
   const trimmed = studentCode.trim()
   if (!trimmed) return null
 
-  return queryJson<StudentRecord | null>(
-    `SELECT JSON_OBJECT(
-        'id', s.id,
-        'studentCode', s.student_code,
-        'classLevel', s.class_level,
-        'room', s.room,
-        'number', s.student_number,
-        'title', s.title,
-        'firstName', s.first_name,
-        'lastName', s.last_name,
-        'createdAt', DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ'),
-        'updatedAt', DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%sZ'),
-        'points', COALESCE(score.total_points, 0)
-      )
+  const rows = await queryRows<StudentRecord>(
+    `SELECT
+        s.id,
+        s.student_code AS studentCode,
+        s.class_level AS classLevel,
+        NULLIF(s.room, '') AS room,
+        NULLIF(s.student_number, '') AS number,
+        NULLIF(s.title, '') AS title,
+        s.first_name AS firstName,
+        s.last_name AS lastName,
+        DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ') AS createdAt,
+        DATE_FORMAT(s.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updatedAt,
+        COALESCE(score.total_points, 0) AS points
      FROM students s
      LEFT JOIN (
         SELECT student_id, SUM(change_value) AS total_points
@@ -128,9 +119,10 @@ export async function getStudentByCode(studentCode: string): Promise<StudentReco
      ) score ON score.student_id = s.student_code
      WHERE s.student_code = ?
      LIMIT 1`,
-    null,
     [trimmed]
   )
+
+  return rows[0] ?? null
 }
 
 function normalizeImportRow(row: StudentImportRow): StudentImportRow | null {
@@ -201,30 +193,21 @@ export async function bulkUpsertStudents(rows: StudentImportRow[]): Promise<{ pr
 }
 
 export async function listStudentCodes(): Promise<string[]> {
-  return queryJson(
-    `SELECT COALESCE(JSON_ARRAYAGG(code ORDER BY code), JSON_ARRAY())
-     FROM (
-       SELECT DISTINCT student_code AS code
-       FROM students
-     ) t`,
-    []
+  const rows = await queryRows<{ code: string }>(
+    `SELECT DISTINCT student_code AS code
+     FROM students
+     ORDER BY student_code`
   )
+  return rows.map((row) => row.code)
 }
 
 export async function listClassRooms(): Promise<Array<{ classLevel: string; room: string | null }>> {
-  return queryJson(
-    `SELECT COALESCE(JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'classLevel', c.class_level,
-          'room', c.room
-        ) ORDER BY c.class_level, c.room
-      ), JSON_ARRAY())
-     FROM (
-       SELECT DISTINCT class_level, COALESCE(NULLIF(room, ''), NULL) AS room
-       FROM students
-       ORDER BY class_level, room
-     ) c`,
-    []
+  return queryRows(
+    `SELECT DISTINCT
+        class_level AS classLevel,
+        COALESCE(NULLIF(room, ''), NULL) AS room
+     FROM students
+     ORDER BY class_level, room`
   )
 }
 
