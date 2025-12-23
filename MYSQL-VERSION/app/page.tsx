@@ -8,6 +8,7 @@ import AdminLogin from "@/components/admin-login"
 import AdminStudentManagement from "@/components/admin-student-management"
 import { checkAdminSession } from "@/lib/admin-auth"
 import type { StudentRecord } from "@/lib/types"
+import { useRfidReader } from "@/hooks/use-rfid-reader"
 
 type Page = "student-login" | "student-register" | "admin-login" | "admin-dashboard"
 
@@ -22,6 +23,7 @@ export default function Home() {
   const [accessCode, setAccessCode] = useState("")
   const [accessError, setAccessError] = useState("")
   const [accessSubmitting, setAccessSubmitting] = useState(false)
+  const rfid = useRfidReader(currentPage === "student-login")
 
   useEffect(() => {
     setMounted(true)
@@ -203,12 +205,13 @@ export default function Home() {
   let content: ReactNode = null
   if (currentPage === "student-login") {
     content = (
-<div className="flex justify-center items-start md:items-center min-h-[calc(100vh-160px)] px-4 py-10 
+      <div className="flex justify-center items-start md:items-center min-h-[calc(100vh-160px)] px-4 py-10 
 bg-gradient-to-b from-blue-50 via-white to-white">        <StudentLogin
           onLogin={(id) => {
             setStudentId(id)
             setCurrentPage("student-register")
           }}
+          rfid={rfid}
         />
       </div>
     )
