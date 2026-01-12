@@ -55,7 +55,7 @@ export function useRfidReader(enabled: boolean = true) {
         isScanningRef.current = true
 
         try {
-            while (port.readable && keepReadingRef.current && isScanningRef.current) {
+            while (port.readable && keepReadingRef.current && isScanningRef.current && enabledRef.current) {
                 // 1. Send Command (strictly one time before waiting)
                 await write("disable_card")
 

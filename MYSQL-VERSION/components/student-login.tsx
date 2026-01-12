@@ -61,11 +61,11 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
 
   // Auto-start scan when connected
   useEffect(() => {
-    if (isConnected && !isScanning && !isLoading && !isManualMode) {
+    if (isConnected && !isScanning && !isLoading && !isManualMode && !lastStudentId) {
       console.log("Auto-starting scan...")
       startScan()
     }
-  }, [isConnected, isScanning, isLoading, isManualMode, startScan])
+  }, [isConnected, isScanning, isLoading, isManualMode, lastStudentId, startScan])
 
   return (
     <div className="w-full flex justify-center px-4 py-8 md:py-12 min-h-[calc(100vh-200px)]">
