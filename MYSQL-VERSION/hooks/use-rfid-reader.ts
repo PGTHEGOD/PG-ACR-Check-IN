@@ -4,16 +4,20 @@ import { useState, useEffect, useCallback, useRef } from "react"
 
 export function useRfidReader(enabled: boolean = true) {
     const [isConnected, setIsConnected] = useState(false)
+    const [isScanning, setIsScanning] = useState(false)
     const [lastStudentId, setLastStudentId] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const portRef = useRef<any>(null)
     const readerRef = useRef<ReadableStreamDefaultReader | null>(null)
     const keepReadingRef = useRef(true)
     const isReadingRef = useRef(false)
+    const isConnectingRef = useRef(false)
+    const isScanningRef = useRef(false)
     const enabledRef = useRef(enabled)
     const lastProcessedIdRef = useRef<string | null>(null)
     const lastProcessedTimeRef = useRef<number>(0)
     const COOLDOWN_MS = 2000 // 2 seconds cooldown for the same card
+    const MAX_BUFFER_SIZE = 1024
 
     useEffect(() => {
         enabledRef.current = enabled
@@ -38,40 +42,53 @@ export function useRfidReader(enabled: boolean = true) {
         }
     }, [])
 
+
     const read = useCallback(async (port: any) => {
         if (isReadingRef.current) return
         isReadingRef.current = true
         keepReadingRef.current = true
 
-        console.log("Starting RFID read loop...")
+        console.log("Starting RFID sequential read loop...")
         let s = ""
+        const decoder = new TextDecoder()
+        setIsScanning(true)
+        isScanningRef.current = true
 
         try {
-            // Initial reader wakeup
-            await write("disable_card")
+            while (port.readable && keepReadingRef.current && isScanningRef.current) {
+                // 1. Send Command (strictly one time before waiting)
+                await write("disable_card")
 
-            while (port.readable && keepReadingRef.current) {
                 const reader = port.readable.getReader()
                 readerRef.current = reader
-                try {
-                    while (true) {
-                        const { value, done } = await reader.read()
-                        if (done) break
 
-                        if (value) {
-                            const chunk = new TextDecoder().decode(value)
+                try {
+                    let timeoutId: any
+                    const timeoutPromise = new Promise((_, reject) => {
+                        timeoutId = setTimeout(() => reject(new Error("RFID_TIMEOUT")), 3500)
+                    })
+
+                    try {
+                        // 2. Wait for response chunk or timeout
+                        const result: any = await Promise.race([reader.read(), timeoutPromise])
+                        clearTimeout(timeoutId)
+
+                        if (result.done) break
+                        if (result.value) {
+                            const chunk = decoder.decode(result.value)
                             s += chunk
 
-                            // Process all complete messages in the buffer
+                            if (s.length > MAX_BUFFER_SIZE) {
+                                s = s.slice(-MAX_BUFFER_SIZE)
+                            }
+
                             while (s.includes("*")) {
                                 const starIndex = s.indexOf("*")
                                 const message = s.substring(0, starIndex)
                                 s = s.substring(starIndex + 1)
 
-                                if (message && enabledRef.current) {
+                                if (message) {
                                     console.log("RFID Message:", message)
-
-                                    // Parse: 200:dis,19311|43239 -> 19311
                                     const parts = message.split(",")
                                     if (parts.length > 1) {
                                         const idMatch = parts[1].match(/\d+/)
@@ -86,40 +103,38 @@ export function useRfidReader(enabled: boolean = true) {
                                                 setLastStudentId(id)
                                                 lastProcessedIdRef.current = id
                                                 lastProcessedTimeRef.current = now
-                                            } else {
-                                                console.log("Duplicate Scan Ignored (Cooldown active):", id)
-                                            }
 
-                                            // Re-send "disable_card" to trigger the next potential scan
-                                            await write("disable_card")
+                                                setIsScanning(false)
+                                                isScanningRef.current = false
+                                                return
+                                            }
                                         }
                                     }
-                                } else if (message && !enabledRef.current) {
-                                    console.log("RFID Scan Ignored (Registration in progress)")
-                                    await write("disable_card")
                                 }
                             }
                         }
+                    } catch (err: any) {
+                        if (err.message === "RFID_TIMEOUT") {
+                            console.log("RFID Timeout - Re-triggering...")
+                            await reader.cancel().catch(() => { })
+                            await write("cancel")
+                            await new Promise(r => setTimeout(r, 500))
+                        } else {
+                            throw err
+                        }
                     }
-                } catch (readErr) {
-                    console.error("Inner read error:", readErr)
-                    break // Break inner and try to get a new reader
                 } finally {
                     reader.releaseLock()
                     readerRef.current = null
                 }
-
-                // Small delay to prevent tight loop on repeat errors
-                if (keepReadingRef.current) {
-                    await new Promise(r => setTimeout(r, 100))
-                }
             }
         } catch (err) {
-            console.error("Serial read loop fatal error:", err)
-            setIsConnected(false)
+            console.error("RFID fatal error:", err)
         } finally {
             isReadingRef.current = false
-            console.log("RFID read loop stopped")
+            setIsScanning(false)
+            isScanningRef.current = false
+            console.log("RFID loop stopped")
         }
     }, [write])
 
@@ -143,7 +158,7 @@ export function useRfidReader(enabled: boolean = true) {
 
             portRef.current = port
             setIsConnected(true)
-            read(port)
+            // Removed automatic read(port) call
         } catch (err) {
             console.error("Failed to connect to serial port:", err)
             setError("เชื่อมต่อไม่สำเร็จ")
@@ -156,8 +171,9 @@ export function useRfidReader(enabled: boolean = true) {
 
         const autoConnect = async () => {
             if (!("serial" in navigator)) return
-            if (isReadingRef.current) return
+            if (isReadingRef.current || isConnectingRef.current) return
 
+            isConnectingRef.current = true
             try {
                 const ports = await (navigator as any).serial.getPorts()
                 const savedKey = localStorage.getItem(STORAGE_KEY)
@@ -169,7 +185,6 @@ export function useRfidReader(enabled: boolean = true) {
 
                 if (port) {
                     try {
-                        // Attempt to open, if already open it will throw but we catch it
                         try {
                             await port.open({ baudRate: 115200 })
                         } catch (err: any) {
@@ -178,19 +193,20 @@ export function useRfidReader(enabled: boolean = true) {
 
                         portRef.current = port
                         setIsConnected(true)
-                        read(port)
+                        // Removed automatic read(port) call
                     } catch (err) {
                         console.error("Failed to auto-connect port:", err)
                     }
                 }
             } catch (err) {
                 console.log("Auto-connect check failed:", err)
+            } finally {
+                isConnectingRef.current = false
             }
         }
 
         autoConnect()
 
-        // Periodic check to ensure we are still connected/reading
         timer = setInterval(() => {
             if (!isReadingRef.current && localStorage.getItem(STORAGE_KEY)) {
                 autoConnect()
@@ -199,9 +215,25 @@ export function useRfidReader(enabled: boolean = true) {
 
         return () => {
             keepReadingRef.current = false
+            if (readerRef.current) {
+                readerRef.current.cancel().catch(console.error)
+            }
             clearInterval(timer)
         }
-    }, [read])
+    }, [])
 
-    return { isConnected, lastStudentId, error, connect, setLastStudentId }
+    const startScan = useCallback(() => {
+        if (isConnected && portRef.current) {
+            read(portRef.current)
+        } else if (!isConnected) {
+            setError("โปรดเชื่อมต่อเครื่องสแกนก่อน")
+        }
+    }, [isConnected, read])
+
+    const stopScan = useCallback(() => {
+        setIsScanning(false)
+        isScanningRef.current = false
+    }, [])
+
+    return { isConnected, isScanning, lastStudentId, error, connect, startScan, stopScan, setLastStudentId }
 }

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { BookOpen, Nfc, Keyboard, UserCircle, Settings2, ShieldCheck, AlertCircle } from "lucide-react"
 import { useRfidReader } from "@/hooks/use-rfid-reader"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface StudentLoginProps {
   onLogin: (studentId: string) => void
@@ -19,7 +21,10 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isManualMode, setIsManualMode] = useState(false)
-  const { isConnected, lastStudentId, connect, setLastStudentId, error: rfidError } = rfid
+  const { isConnected, isScanning, lastStudentId, connect, startScan, stopScan, setLastStudentId, error: rfidError } = rfid
+
+  const { toast } = useToast()
+  const [isScanningModalOpen, setIsScanningModalOpen] = useState(false)
 
   const handleSubmit = async (e?: React.FormEvent, idToSubmit?: string) => {
     if (e) e.preventDefault()
@@ -46,8 +51,21 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
       setStudentId(lastStudentId)
       handleSubmit(undefined, lastStudentId)
       setLastStudentId(null)
+      setIsScanningModalOpen(false)
+      toast({
+        title: "สแกนสำเร็จ",
+        description: `รหัสนักเรียน: ${lastStudentId}`,
+      })
     }
-  }, [lastStudentId, isLoading, setLastStudentId])
+  }, [lastStudentId, isLoading, setLastStudentId, toast])
+
+  // Auto-start scan when connected
+  useEffect(() => {
+    if (isConnected && !isScanning && !isLoading && !isManualMode) {
+      console.log("Auto-starting scan...")
+      startScan()
+    }
+  }, [isConnected, isScanning, isLoading, isManualMode, startScan])
 
   return (
     <div className="w-full flex justify-center px-4 py-8 md:py-12 min-h-[calc(100vh-200px)]">
@@ -164,13 +182,13 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
                         className="absolute inset-0 bg-blue-400 rounded-full blur-3xl"
                       />
                       <div className="relative h-44 w-44 rounded-[3.5rem] bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center shadow-[0_15px_35px_rgba(59,130,246,0.25)] border-[6px] border-white overflow-hidden">
-                        <Nfc className={`h-16 w-16 text-white ${isConnected ? 'animate-pulse' : 'opacity-50'}`} />
+                        <Nfc className={`h-16 w-16 text-white ${isScanning ? 'animate-pulse' : 'opacity-50'}`} />
                         <div className="mt-2 text-[10px] font-bold text-white/70 uppercase tracking-widest">
-                          PG CARD
+                          {isScanning ? 'SCANNING...' : 'PG CARD'}
                         </div>
 
                         {/* Scanning wave effect */}
-                        {isConnected && (
+                        {isScanning && (
                           <motion.div
                             animate={{ y: [-60, 60] }}
                             transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
@@ -199,6 +217,17 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
                       </div>
 
                       <div className="pt-2">
+                        <Button
+                          onClick={() => {
+                            setIsScanningModalOpen(true)
+                            startScan()
+                          }}
+                          disabled={!isConnected || isScanning}
+                          className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98] ${isScanning ? 'bg-blue-100 text-blue-600' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200'}`}
+                        >
+                          <Nfc className={`h-6 w-6 ${isScanning ? 'animate-pulse' : ''}`} />
+                          {isScanning ? "กำลังรอสแกน..." : "เริ่มสแกนบัตร"}
+                        </Button>
                         <Button
                           onClick={() => setIsManualMode(true)}
                           variant="ghost"
@@ -301,6 +330,39 @@ export default function StudentLogin({ onLogin, rfid }: StudentLoginProps) {
 
 
       </div>
+
+      <Dialog open={isScanningModalOpen} onOpenChange={(open) => {
+        setIsScanningModalOpen(open)
+        if (!open) stopScan()
+      }}>
+        <DialogContent className="sm:max-w-md bg-white rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="flex flex-col items-center justify-center p-12 space-y-8 bg-gradient-to-b from-blue-50 to-white">
+            <div className="relative">
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 bg-blue-400 rounded-full blur-3xl opacity-20"
+              />
+              <div className="relative h-32 w-32 rounded-full bg-blue-600 flex items-center justify-center shadow-xl border-4 border-white">
+                <Nfc className="h-16 w-16 text-white animate-pulse" />
+              </div>
+            </div>
+
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900">กำลังรอสแกนบัตร...</h2>
+              <p className="text-slate-500 font-medium px-4">โปรดวางบัตร RFID ของนักเรียนทาบกับเครื่องสแกน</p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="px-8 h-12 rounded-xl border-slate-200 font-bold"
+              onClick={() => setIsScanningModalOpen(false)}
+            >
+              ยกเลิก
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
