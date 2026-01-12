@@ -16,7 +16,7 @@ export function useRfidReader(enabled: boolean = true) {
     const enabledRef = useRef(enabled)
     const lastProcessedIdRef = useRef<string | null>(null)
     const lastProcessedTimeRef = useRef<number>(0)
-    const COOLDOWN_MS = 2000 // 2 seconds cooldown for the same card
+    const COOLDOWN_MS = 5000 // 5 seconds cooldown for the same card
     const MAX_BUFFER_SIZE = 1024
 
     useEffect(() => {
