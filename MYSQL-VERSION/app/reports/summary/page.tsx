@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts"
 import { Printer, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -270,58 +270,65 @@ export default function SummaryReportPage() {
                                 </div>
                             </div>
 
-                            {/* Chart Section */}
+                            {/* Chart Section - Bar Chart */}
                             <div className="flex flex-col items-center justify-start h-full pt-4 print:pt-0">
-                                <div className="w-full h-[350px] print:h-[220px] relative">
-                                    <ResponsiveContainer width="100%" height="60%">
-                                        <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                                            <Pie
-                                                data={data.pieChartData}
-                                                cx="50%"
-                                                cy="50%"
-                                                outerRadius={75}
-                                                innerRadius={35}
-                                                paddingAngle={2}
-                                                dataKey="value"
-                                                isAnimationActive={false}
-                                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, x, y }) => {
-                                                    const RADIAN = Math.PI / 180;
-                                                    // Simple outer positioning for safety in narrow columns
-                                                    return (
-                                                        <text
-                                                            x={x}
-                                                            y={y}
-                                                            fill="#000000"
-                                                            textAnchor={x > cx ? 'start' : 'end'}
-                                                            dominantBaseline="central"
-                                                            className="text-[12px] font-bold print:text-[10px]"
-                                                            style={{ fontWeight: 700 }}
-                                                        >
-                                                            {`${name} ${(percent * 100).toFixed(1)}%`}
+                                <div className="w-full h-[350px] print:h-[250px] relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={data.tableData}
+                                            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                            <XAxis
+                                                dataKey="level"
+                                                tick={({ x, y, payload }) => (
+                                                    <g transform={`translate(${x},${y})`}>
+                                                        <text x={0} y={0} dy={16} textAnchor="middle" fill="#374151" className="text-xs font-medium">
+                                                            {payload.value}
                                                         </text>
-                                                    );
-                                                }}
-                                                labelLine={{ stroke: "#000000", strokeWidth: 1 }}
-                                                stroke="#fff"
-                                                strokeWidth={2}
-                                            >
-                                                {data.pieChartData.map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={COLORS[index % COLORS.length]}
-                                                        stroke="#fff"
-                                                    />
-                                                ))}
-                                            </Pie>
-                                            <RechartsTooltip
-                                                formatter={(value: number) => [value, "คน"]}
-                                                contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                                                    </g>
+                                                )}
+                                                axisLine={{ stroke: '#9ca3af' }}
+                                                tickLine={false}
                                             />
-                                        </PieChart>
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                            />
+                                            <RechartsTooltip
+                                                cursor={{ fill: '#f3f4f6' }}
+                                                content={({ active, payload, label }) => {
+                                                    if (active && payload && payload.length) {
+                                                        return (
+                                                            <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
+                                                                <p className="font-bold text-gray-900 mb-1">{label}</p>
+                                                                <p className="text-blue-600 font-semibold">
+                                                                    {payload[0].value} ครั้ง
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            <Bar
+                                                dataKey="total"
+                                                fill="#3b82f6"
+                                                radius={[4, 4, 0, 0]}
+                                                barSize={30}
+                                                name="จำนวนผู้เข้าใช้"
+                                            >
+                                                {/* Optional: Color bars by grade group if desired, or keep uniform blue */}
+                                                {data?.tableData?.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.level.includes('ป.') ? '#60A5FA' : '#818CF8'} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 </div>
-                                <p className="text-center text-sm font-semibold text-gray-500 mt-[-10px] print:mt-1 print:text-[10px]">
-                                    แผนภูมิแสดงสัดส่วนผู้เข้าใช้บริการแบ่งตามระดับชั้น
+                                <p className="text-center text-sm font-semibold text-gray-500 mt-2 print:mt-24 print:text-[10px]">
+                                    แผนภูมิแสดงจำนวนผู้เข้าใช้บริการแยกตามระดับชั้น (ป.1 - ม.6)
                                 </p>
                             </div>
                         </div>
