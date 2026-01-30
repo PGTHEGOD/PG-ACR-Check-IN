@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getAccessCookieName, isAccessEnabled, isAuthorizedCookie } from "@/lib/access-control"
 
-const PUBLIC_API = ["/api/access", "/api/health"]
+const PUBLIC_API = ["/api/access", "/api/health", "/api/register-net"]
 
 export function middleware(request: NextRequest) {
   if (!isAccessEnabled()) {
