@@ -12,6 +12,10 @@ import { useRfidReader } from "@/hooks/use-rfid-reader"
 
 type Page = "student-login" | "student-register" | "admin-login" | "admin-dashboard"
 
+// Reader type: set NEXT_PUBLIC_RFID_TRANSPORT="ble" for a Bluetooth reader,
+// otherwise the default USB (serial) reader is used.
+const RFID_TRANSPORT = process.env.NEXT_PUBLIC_RFID_TRANSPORT === "ble" ? "ble" : "serial"
+
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<Page>("student-login")
   const [studentId, setStudentId] = useState("")
@@ -23,7 +27,7 @@ export default function Home() {
   const [accessCode, setAccessCode] = useState("")
   const [accessError, setAccessError] = useState("")
   const [accessSubmitting, setAccessSubmitting] = useState(false)
-  const rfid = useRfidReader(currentPage === "student-login")
+  const rfid = useRfidReader({ enabled: currentPage === "student-login", transport: RFID_TRANSPORT })
 
   useEffect(() => {
     setMounted(true)
