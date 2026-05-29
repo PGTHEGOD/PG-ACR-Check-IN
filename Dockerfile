@@ -3,9 +3,15 @@
 ARG NODE_VERSION=20
 ARG APP_VARIANT=MYSQL-VERSION
 
+# Pin pnpm explicitly: corepack's default (pnpm 11.x) requires a newer Node than
+# the v20 base image and crashes with ERR_UNKNOWN_BUILTIN_MODULE. 9.15.4 reads
+# lockfileVersion 9.0 and is fully compatible with Node 20.
+ARG PNPM_VERSION=9.15.4
 FROM node:${NODE_VERSION}-alpine AS base
+ARG PNPM_VERSION
 RUN apk add --no-cache libc6-compat \
-  && corepack enable
+  && corepack enable \
+  && corepack prepare pnpm@${PNPM_VERSION} --activate
 WORKDIR /app
 
 FROM base AS deps
